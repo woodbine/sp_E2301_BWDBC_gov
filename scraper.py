@@ -73,6 +73,8 @@ for link in links:
         for link_csv in links_csv:
            if '.csv' in link_csv['href']:
                 url = link_csv['href']
+                if 'http://' not in url:
+                    url = 'http://www.blackburn.gov.uk' + url
                 csvfiles = link_csv.text.strip()
                 csvYr = csvfiles.split(' ')[-1]
                 csvMth = csvfiles.split(' ')[0][:3]
