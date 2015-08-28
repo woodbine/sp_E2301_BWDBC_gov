@@ -58,7 +58,7 @@ def convert_mth_strings ( mth_string ):
 # pull down the content from the webpage
 #proxies = {'http': 'http://54.241.248.52:80'}
 html = requests.get (url)
-soup = BeautifulSoup(html.text)
+soup = BeautifulSoup(html.text, 'lxml')
 
 # find all entries with the required class
 block = soup.find('div', attrs = {'class':'article-content'})
@@ -67,7 +67,7 @@ for link in links:
     if'20' in link['href']:
         url_csv = 'http://www.blackburn.gov.uk' + link['href']
         html_csv = requests.get (url_csv)
-        soup_csv = BeautifulSoup(html_csv.text)
+        soup_csv = BeautifulSoup(html_csv.text, 'lxml')
         block_csv = soup_csv.find('div', attrs = {'class': 'main-copy'})
         links_csv = block_csv.findAll('a', href = True)
         for link_csv in links_csv:
