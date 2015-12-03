@@ -8,8 +8,7 @@ import scraperwiki
 import urllib2
 from datetime import datetime
 from bs4 import BeautifulSoup
-import requests
-from dateutil.parser import parse
+
 
 #### FUNCTIONS 1.0
 
@@ -39,24 +38,25 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = requests.get(url, allow_redirects=True, timeout=20)
+        r = urllib2.urlopen(url)
         count = 1
-        while r.status_code == 500 and count < 4:
+        while r.getcode() == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = requests.get(url, allow_redirects=True, timeout=20)
+            r = urllib2.urlopen(url)
         sourceFilename = r.headers.get('Content-Disposition')
 
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         else:
             ext = os.path.splitext(url)[1]
-        validURL = r.status_code == 200
-        validFiletype = ext in ['.csv', '.xls', '.xlsx']
+        validURL = r.getcode() == 200
+        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
     except:
         print ("Error validating URL.")
         return False, False
+
 
 def validate(filename, file_url):
     validFilename = validateFilename(filename)
@@ -87,13 +87,16 @@ def convert_mth_strings ( mth_string ):
 
 entity_id = "E2301_BWDBC_gov"
 url = "http://www.blackburn.gov.uk/Pages/Spending-publication.aspx"
+proxy = urllib2.ProxyHandler({'http': '45.63.96.5:8080'})
+opener = urllib2.build_opener(proxy)
+urllib2.install_opener(opener)
 errors = 0
 data = []
 
 #### READ HTML 1.0
 
-html = requests.get(url)
-soup = BeautifulSoup(html.text, 'lxml')
+html = urllib2.urlopen(url)
+soup = BeautifulSoup(html, 'lxml')
 
 
 #### SCRAPE DATA
@@ -103,8 +106,8 @@ links = block.findAll('a')
 for link in links:
     if'20' in link['href']:
         url_csv = 'http://www.blackburn.gov.uk' + link['href']
-        html_csv = requests.get (url_csv)
-        soup_csv = BeautifulSoup(html_csv.text, 'lxml')
+        html_csv = urllib2.urlopen(url_csv)
+        soup_csv = BeautifulSoup(html_csv, 'lxml')
         block_csv = soup_csv.find('div', attrs = {'class': 'main-copy'})
         links_csv = block_csv.findAll('a', href = True)
         for link_csv in links_csv:
