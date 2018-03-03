@@ -87,9 +87,9 @@ def convert_mth_strings ( mth_string ):
 
 entity_id = "E2301_BWDBC_gov"
 url = "http://www.blackburn.gov.uk/Pages/Spending-publication.aspx"
-proxy = urllib2.ProxyHandler({'http': '45.63.96.5:8080'})
-opener = urllib2.build_opener(proxy)
-urllib2.install_opener(opener)
+# proxy = urllib2.ProxyHandler({'http': '45.63.96.5:8080'})
+# opener = urllib2.build_opener(proxy)
+# urllib2.install_opener(opener)
 errors = 0
 data = []
 
