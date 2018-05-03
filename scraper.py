@@ -10,7 +10,9 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 
-#### FUNCTIONS 1.0
+#### FUNCTIONS 1.1
+
+import requests
 
 def validateFilename(filename):
     filenameregex = '^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9]+_[0-9][0-9][0-9][0-9]_[0-9QY][0-9]$'
@@ -38,19 +40,19 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = urllib2.urlopen(url)
+        r = requests.get(url)
         count = 1
-        while r.getcode() == 500 and count < 4:
+        while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib2.urlopen(url)
+            r = requests.get(url)
         sourceFilename = r.headers.get('Content-Disposition')
 
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         else:
             ext = os.path.splitext(url)[1]
-        validURL = r.getcode() == 200
+        validURL = r.status_code == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
     except:
@@ -86,40 +88,31 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "E2301_BWDBC_gov"
-url = "http://www.blackburn.gov.uk/Pages/Spending-publication.aspx"
-# proxy = urllib2.ProxyHandler({'http': '45.63.96.5:8080'})
-# opener = urllib2.build_opener(proxy)
-# urllib2.install_opener(opener)
+url = "http://datashare.blackburn.gov.uk/Download/expenditure-exceeding-500"
+ua = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36'}
 errors = 0
 data = []
 
 #### READ HTML 1.0
 
-html = urllib2.urlopen(url)
-soup = BeautifulSoup(html, 'lxml')
-
+html = requests.get(url, headers=ua)
+soup = BeautifulSoup(html.text, 'lxml')
 
 #### SCRAPE DATA
 
-block = soup.find('div', attrs = {'class':'article-content'})
-links = block.findAll('a')
-for link in links:
-    if'20' in link['href']:
-        url_csv = 'http://www.blackburn.gov.uk' + link['href']
-        html_csv = urllib2.urlopen(url_csv)
-        soup_csv = BeautifulSoup(html_csv, 'lxml')
-        block_csv = soup_csv.find('div', attrs = {'class': 'main-copy'})
-        links_csv = block_csv.findAll('a', href = True)
-        for link_csv in links_csv:
-           if '.csv' in link_csv['href']:
-                url = link_csv['href']
-                if 'http://' not in url:
-                    url = 'http://www.blackburn.gov.uk' + url
-                csvfiles = link_csv.text.strip()
-                csvYr = csvfiles.split(' ')[-1]
-                csvMth = csvfiles.split(' ')[0][:3]
-                csvMth = convert_mth_strings(csvMth.upper())
-                data.append([csvYr, csvMth, url])
+blocks = soup.find_all('h4', attrs = {'class':'grid_4'})
+for block in blocks:
+    if'20' in block.a['href']:
+        url_csv = 'http://datashare.blackburn.gov.uk' + block.a['href']
+        html_csv = requests.get(url_csv, headers=ua)
+        soup_csv = BeautifulSoup(html_csv.text, 'lxml')
+        block_csv = soup_csv.find('a', attrs = {'class': 'download button green CSV'})['href']
+        url = 'http://datashare.blackburn.gov.uk' + block_csv
+        csvfiles = soup_csv.find('td', 'left titlecol Title').text
+        csvYr = csvfiles.split('-')[0].strip()
+        csvMth = 'Y1'
+        csvMth = convert_mth_strings(csvMth.upper())
+        data.append([csvYr, csvMth, url])
 
 
 #### STORE DATA 1.0
